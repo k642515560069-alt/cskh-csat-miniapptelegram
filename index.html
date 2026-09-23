@@ -339,40 +339,41 @@ const user = tg.initDataUnsafe?.user || {};
 const telegramChatId =
   user.id ? String(user.id) : "";
 
-const telegramUsername =
-  user.username ? String(user.username) : "";
-
-const firstName =
-  user.first_name ? String(user.first_name) : "";
-
-const lastName =
-  user.last_name ? String(user.last_name) : "";
-
 
 /* ==========================================
-   FEEDBACK TOKEN
+   KIỂM TRA ĐÃ ĐÁNH GIÁ CHƯA
 ========================================== */
 
 /*
-  Token do n8n tạo và gắn vào link:
+  Mỗi Telegram user sẽ có một key riêng.
 
-  https://your-mini-app.com/?token=ABC123
+  Ví dụ:
 
-  HTML chỉ đọc token và gửi token cùng
-  Telegram ID về n8n.
+  feedback_submitted_8881508686
 
-  LƯU Ý:
-  - Có token: token sẽ được gửi về n8n để xác thực.
-  - Chưa có token: vẫn cho mở form để TEST.
-    Khi triển khai chính thức, n8n nên từ chối
-    request không có token.
 */
 
-const urlParams =
-  new URLSearchParams(window.location.search);
+const STORAGE_KEY =
+  "feedback_submitted_" + telegramChatId;
 
-const feedbackToken =
-  urlParams.get("token") || "";
+
+/*
+  Nếu user đã đánh giá trước đó
+  → ẩn form
+  → hiện màn hình đã đánh giá
+*/
+
+if (
+  telegramChatId &&
+  localStorage.getItem(STORAGE_KEY) === "true"
+) {
+
+  document.getElementById("formScreen").style.display = "none";
+
+  document.getElementById("alreadyScreen").style.display = "block";
+
+}
+
 
 /* ==========================================
    STAR RATING
@@ -499,9 +500,7 @@ async function submitFeedback() {
       `${firstName} ${lastName}`.trim(),
 
     submitted_at:
-      new Date().toISOString(),
-
-    feedback_token: feedbackToken
+      new Date().toISOString()
 
   };
 
@@ -511,19 +510,6 @@ async function submitFeedback() {
     /* ======================================
        GỬI DATA SANG N8N
     ====================================== */
-
-    /*
-      n8n sẽ nhận:
-      - telegram_chat_id
-      - feedback_token
-      - score
-      - feedback
-      - customer information
-      - submitted_at
-
-      Quyền đánh giá và việc giới hạn 1 lần/tháng
-      phải được kiểm tra ở n8n.
-    */
 
     const response =
       await fetch(
@@ -552,6 +538,20 @@ async function submitFeedback() {
 
       throw new Error(
         `N8N trả về lỗi ${response.status}`
+      );
+
+    }
+
+
+    /* ======================================
+       LƯU TRẠNG THÁI ĐÃ ĐÁNH GIÁ
+    ====================================== */
+
+    if (telegramChatId) {
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        "true"
       );
 
     }
@@ -676,3 +676,4 @@ async function submitFeedback() {
 
 </body>
 </html>
+
