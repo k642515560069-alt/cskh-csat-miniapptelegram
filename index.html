@@ -4,9 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Đánh giá dịch vụ</title>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
 
   html, body {
     margin: 0;
@@ -21,7 +25,15 @@
       20px
       calc(24px + env(safe-area-inset-bottom, 0px))
       20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+
     background: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #1c1c1e);
   }
@@ -67,9 +79,14 @@
     background: transparent;
     cursor: pointer;
     padding: 6px;
+
     filter: grayscale(1);
     opacity: 0.4;
-    transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+
+    transition:
+      transform 0.15s ease,
+      opacity 0.15s ease,
+      filter 0.15s ease;
   }
 
   .star.selected {
@@ -102,12 +119,17 @@
     min-height: 110px;
     padding: 12px 14px;
     border-radius: 12px;
+
     border: 1px solid var(--tg-theme-hint-color, #d1d1d6);
+
     font-size: 16px;
     font-family: inherit;
+
     resize: vertical;
+
     background: var(--tg-theme-secondary-bg-color, #f2f2f7);
     color: var(--tg-theme-text-color, #1c1c1e);
+
     outline: none;
   }
 
@@ -123,12 +145,16 @@
     width: 100%;
     margin-top: 22px;
     padding: 15px;
+
     border: none;
     border-radius: 12px;
+
     background: var(--tg-theme-button-color, #2481cc);
     color: var(--tg-theme-button-text-color, #ffffff);
+
     font-size: 16px;
     font-weight: 600;
+
     cursor: pointer;
   }
 
@@ -145,6 +171,8 @@
     min-height: 16px;
   }
 
+  /* SUCCESS SCREEN */
+
   .success-screen {
     display: none;
     text-align: center;
@@ -158,131 +186,492 @@
   .success-screen h1 {
     margin-top: 8px;
   }
+
+  /* ALREADY SUBMITTED SCREEN */
+
+  .already-screen {
+    display: none;
+    text-align: center;
+    padding-top: 60px;
+  }
+
+  .already-screen .icon {
+    font-size: 56px;
+  }
+
+  .already-screen h1 {
+    margin-top: 8px;
+  }
 </style>
 </head>
+
 <body>
 
+<!-- =========================
+     FORM ĐÁNH GIÁ
+========================= -->
+
 <div class="container" id="formScreen">
+
   <div class="icon">⭐</div>
+
   <h1>Đánh giá dịch vụ</h1>
-  <p class="description">Bạn hài lòng với dịch vụ hỗ trợ khách hàng của chúng tôi ở mức nào?</p>
+
+  <p class="description">
+    Bạn hài lòng với dịch vụ hỗ trợ khách hàng của chúng tôi ở mức nào?
+  </p>
 
   <div class="stars" id="stars">
+
     <button class="star" data-score="1">⭐</button>
     <button class="star" data-score="2">⭐</button>
     <button class="star" data-score="3">⭐</button>
     <button class="star" data-score="4">⭐</button>
     <button class="star" data-score="5">⭐</button>
+
   </div>
+
   <div class="score-label" id="scoreLabel"></div>
 
-  <label for="feedback">Cảm nhận thêm (không bắt buộc)</label>
-  <textarea id="feedback" placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?"></textarea>
+  <label for="feedback">
+    Cảm nhận thêm (không bắt buộc)
+  </label>
 
-  <button id="submitButton" class="submit" onclick="submitFeedback()">Gửi đánh giá</button>
+  <textarea
+    id="feedback"
+    placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?"
+  ></textarea>
+
+  <button
+    id="submitButton"
+    class="submit"
+    onclick="submitFeedback()"
+  >
+    Gửi đánh giá
+  </button>
+
   <div class="error-msg" id="errorMsg"></div>
+
 </div>
+
+
+<!-- =========================
+     SUCCESS SCREEN
+========================= -->
 
 <div class="container success-screen" id="successScreen">
-  <div class="icon">✅</div>
-  <h1>Cảm ơn bạn!</h1>
-  <p class="description">Đánh giá của bạn đã được ghi nhận.</p>
+
+  <div class="icon" id="successIcon">✅</div>
+
+  <h1 id="successTitle">
+    Cảm ơn bạn!
+  </h1>
+
+  <p class="description" id="successDescription">
+    Đánh giá của bạn đã được ghi nhận.
+  </p>
+
 </div>
 
+
+<!-- =========================
+     ALREADY SUBMITTED
+========================= -->
+
+<div class="container already-screen" id="alreadyScreen">
+
+  <div class="icon">✅</div>
+
+  <h1>Bạn đã gửi đánh giá</h1>
+
+  <p class="description">
+    Cảm ơn bạn đã dành thời gian chia sẻ trải nghiệm của mình.
+  </p>
+
+</div>
+
+
 <script>
-  // ==========================================
-  // TELEGRAM MINI APP
-  // ==========================================
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
 
-  // ==========================================
-  // ĐIỀN URL WEBHOOK N8N CỦA BẠN VÀO ĐÂY
-  // ==========================================
-  const N8N_WEBHOOK_URL = "https://dbg9.app.n8n.cloud/webhook-test/677803e5-7722-450b-8895-39d98368dade";
+/* ==========================================
+   TELEGRAM MINI APP
+========================================== */
 
-  const SCORE_LABELS = {
-    1: "Rất không hài lòng",
-    2: "Không hài lòng",
-    3: "Bình thường",
-    4: "Hài lòng",
-    5: "Rất hài lòng"
-  };
+const tg = window.Telegram.WebApp;
 
-  let selectedScore = 0;
+tg.ready();
+tg.expand();
 
-  const stars = document.querySelectorAll(".star");
-  const scoreLabel = document.getElementById("scoreLabel");
 
-  stars.forEach(star => {
-    star.addEventListener("click", () => {
-      selectedScore = Number(star.dataset.score);
-      stars.forEach(s => {
-        s.classList.toggle("selected", Number(s.dataset.score) <= selectedScore);
-      });
-      scoreLabel.textContent = SCORE_LABELS[selectedScore] || "";
-      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+/* ==========================================
+   N8N WEBHOOK
+========================================== */
+
+const N8N_WEBHOOK_URL =
+  "https://dbg9.app.n8n.cloud/webhook-test/677803e5-7722-450b-8895-39d98368dade";
+
+
+/* ==========================================
+   SCORE LABELS
+========================================== */
+
+const SCORE_LABELS = {
+
+  1: "Rất không hài lòng",
+
+  2: "Không hài lòng",
+
+  3: "Bình thường",
+
+  4: "Hài lòng",
+
+  5: "Rất hài lòng"
+
+};
+
+
+/* ==========================================
+   TELEGRAM USER
+========================================== */
+
+const user = tg.initDataUnsafe?.user || {};
+
+const telegramChatId =
+  user.id ? String(user.id) : "";
+
+
+/* ==========================================
+   KIỂM TRA ĐÃ ĐÁNH GIÁ CHƯA
+========================================== */
+
+/*
+  Mỗi Telegram user sẽ có một key riêng.
+
+  Ví dụ:
+
+  feedback_submitted_8881508686
+
+*/
+
+const STORAGE_KEY =
+  "feedback_submitted_" + telegramChatId;
+
+
+/*
+  Nếu user đã đánh giá trước đó
+  → ẩn form
+  → hiện màn hình đã đánh giá
+*/
+
+if (
+  telegramChatId &&
+  localStorage.getItem(STORAGE_KEY) === "true"
+) {
+
+  document.getElementById("formScreen").style.display = "none";
+
+  document.getElementById("alreadyScreen").style.display = "block";
+
+}
+
+
+/* ==========================================
+   STAR RATING
+========================================== */
+
+let selectedScore = 0;
+
+const stars =
+  document.querySelectorAll(".star");
+
+const scoreLabel =
+  document.getElementById("scoreLabel");
+
+
+stars.forEach(star => {
+
+  star.addEventListener("click", () => {
+
+    selectedScore =
+      Number(star.dataset.score);
+
+    stars.forEach(s => {
+
+      s.classList.toggle(
+        "selected",
+        Number(s.dataset.score) <= selectedScore
+      );
+
     });
+
+    scoreLabel.textContent =
+      SCORE_LABELS[selectedScore] || "";
+
+    if (tg.HapticFeedback) {
+
+      tg.HapticFeedback.impactOccurred("light");
+
+    }
+
   });
 
-  async function submitFeedback() {
-    const errorMsg = document.getElementById("errorMsg");
-    errorMsg.textContent = "";
+});
 
-    if (selectedScore === 0) {
-      errorMsg.textContent = "Vui lòng chọn số sao trước khi gửi.";
-      return;
-    }
 
-    const feedback = document.getElementById("feedback").value.trim();
-    const submitButton = document.getElementById("submitButton");
-    submitButton.disabled = true;
-    submitButton.innerText = "Đang gửi...";
+/* ==========================================
+   SUBMIT FEEDBACK
+========================================== */
 
-    // Thông tin user lấy từ Telegram (chỉ có giá trị thật khi mở trong Telegram)
-    const user = tg.initDataUnsafe?.user || {};
-    const telegramChatId = user.id ? String(user.id) : "";
-    const telegramUsername = user.username ? String(user.username) : "";
-    const firstName = user.first_name ? String(user.first_name) : "";
-    const lastName = user.last_name ? String(user.last_name) : "";
+async function submitFeedback() {
 
-    const data = {
-      score: selectedScore,
-      feedback: feedback,
-      telegram_chat_id: telegramChatId,
-      telegram_username: telegramUsername,
-      customer_name: `${firstName} ${lastName}`.trim(),
-      submitted_at: new Date().toISOString()
-    };
+  const errorMsg =
+    document.getElementById("errorMsg");
 
-    try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+  errorMsg.textContent = "";
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("N8N Error:", errorText);
-        throw new Error(`N8N trả về lỗi ${response.status}`);
-      }
 
-      document.getElementById("formScreen").style.display = "none";
-      document.getElementById("successScreen").style.display = "block";
+  /* Không cho gửi nếu chưa chọn sao */
 
-      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+  if (selectedScore === 0) {
 
-      setTimeout(() => tg.close(), 1500);
+    errorMsg.textContent =
+      "Vui lòng chọn số sao trước khi gửi.";
 
-    } catch (error) {
-      console.error("Submit error:", error);
-      errorMsg.textContent = "Không thể gửi đánh giá. Vui lòng thử lại.";
-      submitButton.disabled = false;
-      submitButton.innerText = "Gửi đánh giá";
-    }
+    return;
+
   }
+
+
+  /* ========================================
+     LẤY FEEDBACK
+  ======================================== */
+
+  const feedback =
+    document.getElementById("feedback")
+      .value
+      .trim();
+
+
+  const submitButton =
+    document.getElementById("submitButton");
+
+
+  submitButton.disabled = true;
+
+  submitButton.innerText =
+    "Đang gửi...";
+
+
+  /* ========================================
+     THÔNG TIN USER TELEGRAM
+  ======================================== */
+
+  const telegramUsername =
+    user.username
+      ? String(user.username)
+      : "";
+
+  const firstName =
+    user.first_name
+      ? String(user.first_name)
+      : "";
+
+  const lastName =
+    user.last_name
+      ? String(user.last_name)
+      : "";
+
+
+  /* ========================================
+     DATA GỬI SANG N8N
+  ======================================== */
+
+  const data = {
+
+    score: selectedScore,
+
+    feedback: feedback,
+
+    telegram_chat_id: telegramChatId,
+
+    telegram_username: telegramUsername,
+
+    customer_name:
+      `${firstName} ${lastName}`.trim(),
+
+    submitted_at:
+      new Date().toISOString()
+
+  };
+
+
+  try {
+
+    /* ======================================
+       GỬI DATA SANG N8N
+    ====================================== */
+
+    const response =
+      await fetch(
+        N8N_WEBHOOK_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify(data)
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(
+        "N8N Error:",
+        errorText
+      );
+
+      throw new Error(
+        `N8N trả về lỗi ${response.status}`
+      );
+
+    }
+
+
+    /* ======================================
+       LƯU TRẠNG THÁI ĐÃ ĐÁNH GIÁ
+    ====================================== */
+
+    if (telegramChatId) {
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        "true"
+      );
+
+    }
+
+
+    /* ======================================
+       THAY ĐỔI NỘI DUNG SAU KHI GỬI
+    ====================================== */
+
+    const successIcon =
+      document.getElementById("successIcon");
+
+    const successTitle =
+      document.getElementById("successTitle");
+
+    const successDescription =
+      document.getElementById(
+        "successDescription"
+      );
+
+
+    /*
+      1–3 SAO
+    */
+
+    if (selectedScore <= 3) {
+
+      successIcon.textContent = "💙";
+
+      successTitle.textContent =
+        "Rất tiếc vì trải nghiệm chưa tốt";
+
+      successDescription.textContent =
+        "Đánh giá của bạn đã được ghi nhận. " +
+        "Chúng tôi sẽ xem xét phản hồi của bạn " +
+        "để cải thiện chất lượng dịch vụ.";
+
+    }
+
+
+    /*
+      4–5 SAO
+    */
+
+    else {
+
+      successIcon.textContent = "💚";
+
+      successTitle.textContent =
+        "Cảm ơn bạn!";
+
+      successDescription.textContent =
+        "Đánh giá của bạn đã được ghi nhận. " +
+        "Cảm ơn bạn đã dành thời gian chia sẻ!";
+
+    }
+
+
+    /* ======================================
+       ẨN FORM
+    ====================================== */
+
+    document.getElementById(
+      "formScreen"
+    ).style.display = "none";
+
+
+    /* ======================================
+       HIỆN SUCCESS
+    ====================================== */
+
+    document.getElementById(
+      "successScreen"
+    ).style.display = "block";
+
+
+    /* ======================================
+       TELEGRAM HAPTIC
+    ====================================== */
+
+    if (tg.HapticFeedback) {
+
+      tg.HapticFeedback
+        .notificationOccurred("success");
+
+    }
+
+
+    /* ======================================
+       ĐÓNG MINI APP
+    ====================================== */
+
+    setTimeout(() => {
+
+      tg.close();
+
+    }, 2500);
+
+
+  } catch (error) {
+
+    console.error(
+      "Submit error:",
+      error
+    );
+
+
+    errorMsg.textContent =
+      "Không thể gửi đánh giá. Vui lòng thử lại.";
+
+
+    submitButton.disabled = false;
+
+    submitButton.innerText =
+      "Gửi đánh giá";
+
+  }
+
+}
+
 </script>
 
 </body>
