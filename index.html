@@ -339,38 +339,68 @@ const user = tg.initDataUnsafe?.user || {};
 const telegramChatId =
   user.id ? String(user.id) : "";
 
+const telegramUsername =
+  user.username ? String(user.username) : "";
+
+const firstName =
+  user.first_name ? String(user.first_name) : "";
+
+const lastName =
+  user.last_name ? String(user.last_name) : "";
+
 
 /* ==========================================
-   KIỂM TRA ĐÃ ĐÁNH GIÁ CHƯA
+   FEEDBACK TOKEN
 ========================================== */
 
 /*
-  Mỗi Telegram user sẽ có một key riêng.
+  Token được n8n tạo trước khi gửi link cho khách.
 
   Ví dụ:
+  https://your-mini-app.com/?token=abc123...
 
-  feedback_submitted_8881508686
+  Token KHÔNG được tạo trong HTML.
+  HTML chỉ đọc token từ URL và gửi token
+  cùng Telegram ID về n8n để kiểm tra.
 
+  Không dùng localStorage để xác định quyền
+  đánh giá nữa. Việc kiểm tra quyền và
+  đánh giá 1 lần/tháng được thực hiện ở n8n.
 */
 
-const STORAGE_KEY =
-  "feedback_submitted_" + telegramChatId;
+const urlParams =
+  new URLSearchParams(window.location.search);
 
+const feedbackToken =
+  urlParams.get("token") || "";
+
+
+/* ==========================================
+   KIỂM TRA THÔNG TIN ĐẦU VÀO
+========================================== */
 
 /*
-  Nếu user đã đánh giá trước đó
-  → ẩn form
-  → hiện màn hình đã đánh giá
+  Nếu không có Telegram ID hoặc token,
+  không cho khách gửi đánh giá.
 */
 
-if (
-  telegramChatId &&
-  localStorage.getItem(STORAGE_KEY) === "true"
-) {
+if (!telegramChatId || !feedbackToken) {
 
   document.getElementById("formScreen").style.display = "none";
 
   document.getElementById("alreadyScreen").style.display = "block";
+
+  const alreadyTitle =
+    document.querySelector("#alreadyScreen h1");
+
+  const alreadyDescription =
+    document.querySelector("#alreadyScreen .description");
+
+  alreadyTitle.textContent =
+    "Link đánh giá không hợp lệ";
+
+  alreadyDescription.textContent =
+    "Vui lòng sử dụng link đánh giá được gửi trực tiếp cho bạn.";
 
 }
 
@@ -500,7 +530,9 @@ async function submitFeedback() {
       `${firstName} ${lastName}`.trim(),
 
     submitted_at:
-      new Date().toISOString()
+      new Date().toISOString(),
+
+    feedback_token: feedbackToken
 
   };
 
@@ -510,6 +542,15 @@ async function submitFeedback() {
     /* ======================================
        GỬI DATA SANG N8N
     ====================================== */
+
+    /*
+      n8n phải kiểm tra:
+      1. Token có hợp lệ với Telegram ID + năm + tháng không
+      2. Khách đã đánh giá trong tháng đó chưa
+      3. Khách có được cấp link đánh giá hay không
+
+      Chỉ khi n8n xác nhận hợp lệ mới ghi Google Sheet.
+    */
 
     const response =
       await fetch(
@@ -538,20 +579,6 @@ async function submitFeedback() {
 
       throw new Error(
         `N8N trả về lỗi ${response.status}`
-      );
-
-    }
-
-
-    /* ======================================
-       LƯU TRẠNG THÁI ĐÃ ĐÁNH GIÁ
-    ====================================== */
-
-    if (telegramChatId) {
-
-      localStorage.setItem(
-        STORAGE_KEY,
-        "true"
       );
 
     }
