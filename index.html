@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Đánh giá dịch vụ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+  }
+
+  body {
+    padding:
+      calc(24px + env(safe-area-inset-top, 0px))
+      20px
+      calc(24px + env(safe-area-inset-bottom, 0px))
+      20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #1c1c1e);
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .icon {
+    text-align: center;
+    font-size: 40px;
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .description {
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--tg-theme-hint-color, #8e8e93);
+    margin: 0 0 28px;
+  }
+
+  .stars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .star {
+    font-size: 38px;
+    line-height: 1;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px;
+    filter: grayscale(1);
+    opacity: 0.4;
+    transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+  }
+
+  .star.selected {
+    filter: grayscale(0);
+    opacity: 1;
+  }
+
+  .star:active {
+    transform: scale(0.9);
+  }
+
+  .score-label {
+    text-align: center;
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #8e8e93);
+    min-height: 18px;
+    margin-bottom: 24px;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--tg-theme-hint-color, #8e8e93);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--tg-theme-hint-color, #d1d1d6);
+    font-size: 16px;
+    font-family: inherit;
+    resize: vertical;
+    background: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    color: var(--tg-theme-text-color, #1c1c1e);
+    outline: none;
+  }
+
+  textarea:focus {
+    border-color: var(--tg-theme-link-color, #2481cc);
+  }
+
+  textarea::placeholder {
+    color: var(--tg-theme-hint-color, #8e8e93);
+  }
+
+  button.submit {
+    width: 100%;
+    margin-top: 22px;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .error-msg {
+    text-align: center;
+    font-size: 13px;
+    color: #e53935;
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding-top: 60px;
+  }
+
+  .success-screen .icon {
+    font-size: 56px;
+  }
+
+  .success-screen h1 {
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="formScreen">
+  <div class="icon">⭐</div>
+  <h1>Đánh giá dịch vụ</h1>
+  <p class="description">Bạn hài lòng với dịch vụ hỗ trợ khách hàng của chúng tôi ở mức nào?</p>
+
+  <div class="stars" id="stars">
+    <button class="star" data-score="1">⭐</button>
+    <button class="star" data-score="2">⭐</button>
+    <button class="star" data-score="3">⭐</button>
+    <button class="star" data-score="4">⭐</button>
+    <button class="star" data-score="5">⭐</button>
+  </div>
+  <div class="score-label" id="scoreLabel"></div>
+
+  <label for="feedback">Cảm nhận thêm (không bắt buộc)</label>
+  <textarea id="feedback" placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?"></textarea>
+
+  <button id="submitButton" class="submit" onclick="submitFeedback()">Gửi đánh giá</button>
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<div class="container success-screen" id="successScreen">
+  <div class="icon">✅</div>
+  <h1>Cảm ơn bạn!</h1>
+  <p class="description">Đánh giá của bạn đã được ghi nhận.</p>
+</div>
+
+<script>
+  // ==========================================
+  // TELEGRAM MINI APP
+  // ==========================================
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // ==========================================
+  // ĐIỀN URL WEBHOOK N8N CỦA BẠN VÀO ĐÂY
+  // ==========================================
+  const N8N_WEBHOOK_URL = "https://<subdomain>.app.n8n.cloud/webhook/csat";
+
+  const SCORE_LABELS = {
+    1: "Rất không hài lòng",
+    2: "Không hài lòng",
+    3: "Bình thường",
+    4: "Hài lòng",
+    5: "Rất hài lòng"
+  };
+
+  let selectedScore = 0;
+
+  const stars = document.querySelectorAll(".star");
+  const scoreLabel = document.getElementById("scoreLabel");
+
+  stars.forEach(star => {
+    star.addEventListener("click", () => {
+      selectedScore = Number(star.dataset.score);
+      stars.forEach(s => {
+        s.classList.toggle("selected", Number(s.dataset.score) <= selectedScore);
+      });
+      scoreLabel.textContent = SCORE_LABELS[selectedScore] || "";
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+    });
+  });
+
+  async function submitFeedback() {
+    const errorMsg = document.getElementById("errorMsg");
+    errorMsg.textContent = "";
+
+    if (selectedScore === 0) {
+      errorMsg.textContent = "Vui lòng chọn số sao trước khi gửi.";
+      return;
+    }
+
+    const feedback = document.getElementById("feedback").value.trim();
+    const submitButton = document.getElementById("submitButton");
+    submitButton.disabled = true;
+    submitButton.innerText = "Đang gửi...";
+
+    // Thông tin user lấy từ Telegram (chỉ có giá trị thật khi mở trong Telegram)
+    const user = tg.initDataUnsafe?.user || {};
+    const telegramChatId = user.id ? String(user.id) : "";
+    const telegramUsername = user.username ? String(user.username) : "";
+    const firstName = user.first_name ? String(user.first_name) : "";
+    const lastName = user.last_name ? String(user.last_name) : "";
+
+    const data = {
+      score: selectedScore,
+      feedback: feedback,
+      telegram_chat_id: telegramChatId,
+      telegram_username: telegramUsername,
+      customer_name: `${firstName} ${lastName}`.trim(),
+      submitted_at: new Date().toISOString()
+    };
+
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("N8N Error:", errorText);
+        throw new Error(`N8N trả về lỗi ${response.status}`);
+      }
+
+      document.getElementById("formScreen").style.display = "none";
+      document.getElementById("successScreen").style.display = "block";
+
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+
+      setTimeout(() => tg.close(), 1500);
+
+    } catch (error) {
+      console.error("Submit error:", error);
+      errorMsg.textContent = "Không thể gửi đánh giá. Vui lòng thử lại.";
+      submitButton.disabled = false;
+      submitButton.innerText = "Gửi đánh giá";
+    }
+  }
+</script>
+
+</body>
+</html>
