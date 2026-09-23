@@ -354,18 +354,18 @@ const lastName =
 ========================================== */
 
 /*
-  Token được n8n tạo trước khi gửi link cho khách.
+  Token do n8n tạo và gắn vào link:
 
-  Ví dụ:
-  https://your-mini-app.com/?token=abc123...
+  https://your-mini-app.com/?token=ABC123
 
-  Token KHÔNG được tạo trong HTML.
-  HTML chỉ đọc token từ URL và gửi token
-  cùng Telegram ID về n8n để kiểm tra.
+  HTML chỉ đọc token và gửi token cùng
+  Telegram ID về n8n.
 
-  Không dùng localStorage để xác định quyền
-  đánh giá nữa. Việc kiểm tra quyền và
-  đánh giá 1 lần/tháng được thực hiện ở n8n.
+  LƯU Ý:
+  - Có token: token sẽ được gửi về n8n để xác thực.
+  - Chưa có token: vẫn cho mở form để TEST.
+    Khi triển khai chính thức, n8n nên từ chối
+    request không có token.
 */
 
 const urlParams =
@@ -373,37 +373,6 @@ const urlParams =
 
 const feedbackToken =
   urlParams.get("token") || "";
-
-
-/* ==========================================
-   KIỂM TRA THÔNG TIN ĐẦU VÀO
-========================================== */
-
-/*
-  Nếu không có Telegram ID hoặc token,
-  không cho khách gửi đánh giá.
-*/
-
-if (!telegramChatId || !feedbackToken) {
-
-  document.getElementById("formScreen").style.display = "none";
-
-  document.getElementById("alreadyScreen").style.display = "block";
-
-  const alreadyTitle =
-    document.querySelector("#alreadyScreen h1");
-
-  const alreadyDescription =
-    document.querySelector("#alreadyScreen .description");
-
-  alreadyTitle.textContent =
-    "Link đánh giá không hợp lệ";
-
-  alreadyDescription.textContent =
-    "Vui lòng sử dụng link đánh giá được gửi trực tiếp cho bạn.";
-
-}
-
 
 /* ==========================================
    STAR RATING
@@ -544,12 +513,16 @@ async function submitFeedback() {
     ====================================== */
 
     /*
-      n8n phải kiểm tra:
-      1. Token có hợp lệ với Telegram ID + năm + tháng không
-      2. Khách đã đánh giá trong tháng đó chưa
-      3. Khách có được cấp link đánh giá hay không
+      n8n sẽ nhận:
+      - telegram_chat_id
+      - feedback_token
+      - score
+      - feedback
+      - customer information
+      - submitted_at
 
-      Chỉ khi n8n xác nhận hợp lệ mới ghi Google Sheet.
+      Quyền đánh giá và việc giới hạn 1 lần/tháng
+      phải được kiểm tra ở n8n.
     */
 
     const response =
